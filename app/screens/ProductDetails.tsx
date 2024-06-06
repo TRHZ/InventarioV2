@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, Text, View, StyleSheet, Button, ScrollView, TextInput } from 'react-native';
+import { SafeAreaView, Text, View, TextInput, Button, StyleSheet, ScrollView } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useFocusEffect } from '@react-navigation/native';
@@ -44,7 +44,7 @@ function ProductDetails({ route, navigation }: Props): React.JSX.Element {
       db.transaction(tx => {
         tx.executeSql(
           'SELECT * FROM ingresos WHERE productoId = ?',
-          [product.id],
+          [productId],
           (_, { rows }) => {
             let ingresosArray: any[] = [];
             for (let i = 0; i < rows.length; i++) {
@@ -55,7 +55,7 @@ function ProductDetails({ route, navigation }: Props): React.JSX.Element {
         );
         tx.executeSql(
           'SELECT * FROM egresos WHERE productoId = ?',
-          [product.id],
+          [productId],
           (_, { rows }) => {
             let egresosArray: any[] = [];
             for (let i = 0; i < rows.length; i++) {
@@ -71,35 +71,34 @@ function ProductDetails({ route, navigation }: Props): React.JSX.Element {
   };
 
   const handleEntry = async () => {
-    if (cantidadEntrada === '') return;
+    const quantity = parseInt(cantidadEntrada);
+    if (isNaN(quantity) || quantity <= 0) {
+      console.error('La cantidad debe ser un número positivo.');
+      return;
+    }
 
     try {
-      const quantity = parseInt(cantidadEntrada);
-      if (isNaN(quantity) || quantity <= 0) {
-        console.error('La cantidad debe ser un número positivo.');
-        return;
-      }
-
       const db = await LocalDB.connect();
-      db.transaction(async tx => {
+      db.transaction(tx => {
         tx.executeSql(
           'UPDATE productos SET currentStock = currentStock + ? WHERE id = ?',
           [quantity, product.id],
           () => {
             console.log('Cantidad agregada correctamente al producto.');
 
-            // Insertar registro en la tabla 'ingresos'
             tx.executeSql(
               'INSERT INTO ingresos (productoId, cantidad) VALUES (?, ?)',
               [product.id, quantity],
               () => {
                 console.log('Registro de ingreso insertado correctamente');
-                fetchMovimientos(product.id);  // Refresca los movimientos
+                setLoadedProduct(prev => prev ? { ...prev, currentStock: prev.currentStock + quantity } : prev);
+                setCantidadEntrada('');
+                fetchMovimientos(product.id);
               },
               error => console.error('Error al insertar registro de ingreso:', error)
             );
           },
-          error => console.error({ error }),
+          error => console.error({ error })
         );
       });
     } catch (error) {
@@ -108,35 +107,39 @@ function ProductDetails({ route, navigation }: Props): React.JSX.Element {
   };
 
   const handleExit = async () => {
-    if (cantidadSalida === '') return;
+    const quantity = parseInt(cantidadSalida);
+    if (isNaN(quantity) || quantity <= 0) {
+      console.error('La cantidad debe ser un número positivo.');
+      return;
+    }
+
+    if (loadedProduct && quantity > loadedProduct.currentStock) {
+      console.error('No se puede restar más de lo que hay en el stock.');
+      return;
+    }
 
     try {
-      const quantity = parseInt(cantidadSalida);
-      if (isNaN(quantity) || quantity <= 0) {
-        console.error('La cantidad debe ser un número positivo.');
-        return;
-      }
-
       const db = await LocalDB.connect();
-      db.transaction(async tx => {
+      db.transaction(tx => {
         tx.executeSql(
           'UPDATE productos SET currentStock = currentStock - ? WHERE id = ?',
           [quantity, product.id],
           () => {
             console.log('Cantidad restada correctamente del producto.');
 
-            // Insertar registro en la tabla 'egresos'
             tx.executeSql(
               'INSERT INTO egresos (productoId, cantidad) VALUES (?, ?)',
               [product.id, quantity],
               () => {
                 console.log('Registro de egreso insertado correctamente');
-                fetchMovimientos(product.id);  // Refresca los movimientos
+                setLoadedProduct(prev => prev ? { ...prev, currentStock: prev.currentStock - quantity } : prev);
+                setCantidadSalida('');
+                fetchMovimientos(product.id);
               },
               error => console.error('Error al insertar registro de egreso:', error)
             );
           },
-          error => console.error({ error }),
+          error => console.error({ error })
         );
       });
     } catch (error) {
@@ -159,9 +162,9 @@ function ProductDetails({ route, navigation }: Props): React.JSX.Element {
             <Text style={styles.text}>{loadedProduct.currentStock}</Text>
             <Text style={styles.label}>Maximum Stock:</Text>
             <Text style={styles.text}>{loadedProduct.maxStock}</Text>
-            
-            <View style={styles.entryExitContainer}>
-              <Text style={styles.entryExitLabel}>Cantidad a agregar:</Text>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Cantidad a agregar:</Text>
               <TextInput
                 style={styles.input}
                 value={cantidadEntrada}
@@ -172,9 +175,9 @@ function ProductDetails({ route, navigation }: Props): React.JSX.Element {
               />
               <Button title="Agregar Cantidad" onPress={handleEntry} />
             </View>
-            
-            <View style={styles.entryExitContainer}>
-              <Text style={styles.entryExitLabel}>Cantidad a restar:</Text>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Cantidad a restar:</Text>
               <TextInput
                 style={styles.input}
                 value={cantidadSalida}
@@ -185,7 +188,7 @@ function ProductDetails({ route, navigation }: Props): React.JSX.Element {
               />
               <Button title="Restar Cantidad" onPress={handleExit} />
             </View>
-            
+
             <Text style={styles.label}>Ingresos:</Text>
             {ingresos.map((ingreso, index) => (
               <View key={index} style={styles.transactionItem}>
@@ -194,7 +197,6 @@ function ProductDetails({ route, navigation }: Props): React.JSX.Element {
                 <Text style={styles.transactionText}>Fecha: {ingreso.fecha}</Text>
               </View>
             ))}
-            
             <Text style={styles.label}>Egresos:</Text>
             {egresos.map((egreso, index) => (
               <View key={index} style={styles.transactionItem}>
@@ -235,14 +237,9 @@ const styles = StyleSheet.create({
   text: {
     color: 'black',  // Estilo añadido para hacer el texto negro
   },
-  entryExitContainer: {
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  entryExitLabel: {
-    fontWeight: 'bold',
-    color: 'black',
-    marginBottom: 5,
+  inputContainer: {
+    marginVertical: 20,
+    width: '100%',
   },
   input: {
     borderWidth: 1,
@@ -250,16 +247,17 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     padding: 10,
     marginBottom: 10,
-    color: 'black',  // Hacer el texto negro
+    color: 'black',  // Estilo añadido para hacer el texto negro
   },
   transactionItem: {
     marginBottom: 5,
     padding: 5,
-    borderWidth:     1,
-    borderColor: '#cccccc',
+    borderWidth: 1,
+    borderColor: '#ccc',
     borderRadius: 5,
   },
   transactionText: {
+    fontSize: 14,
     color: 'black',  // Estilo añadido para hacer el texto negro
   },
 });
