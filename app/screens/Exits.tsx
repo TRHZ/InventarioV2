@@ -1,4 +1,3 @@
-// Exits.tsx
 import React, { useState } from 'react';
 import { SafeAreaView, Text, TextInput, Button, StyleSheet } from 'react-native';
 import LocalDB from '../persistance/localdb.ts';
@@ -59,6 +58,8 @@ const Exits: React.FC<ExitsProps> = ({ route }) => {
                 value={cantidad}
                 onChangeText={setCantidad}
                 keyboardType="numeric"
+                placeholder="Ingrese la cantidad"
+                placeholderTextColor="gray"
             />
             <Button title="Restar Cantidad" onPress={subtractProductQuantity} />
         </SafeAreaView>
@@ -69,11 +70,12 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 20,
+        backgroundColor: '#fff', // Fondo blanco
     },
     label: {
         fontWeight: 'bold',
         marginTop: 10,
-        color: 'black',  // Estilo añadido para hacer el texto negro
+        color: 'black',  // Texto negro
     },
     input: {
         borderWidth: 1,
@@ -81,7 +83,7 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         padding: 10,
         marginBottom: 10,
-        color: 'black',  // Estilo añadido para hacer el texto negro
+        color: 'black',  // Texto negro
     },
 });
 

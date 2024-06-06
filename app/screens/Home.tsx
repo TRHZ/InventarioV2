@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { SafeAreaView, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import { SafeAreaView, Text, StyleSheet, FlatList, TouchableOpacity, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import LocalDB from "../persistance/localdb";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -48,7 +48,7 @@ const Home: React.FC<HomeProps> = ({ navigation, route }) => {
   );
 
   return (
-    <SafeAreaView>
+    <SafeAreaView style={styles.container}>
       <FlatList 
         data={products} 
         renderItem={({ item }) => (
@@ -56,10 +56,12 @@ const Home: React.FC<HomeProps> = ({ navigation, route }) => {
             style={styles.productItem} 
             onPress={() => navigation.push("ProductDetails", { product: item })}
           >
-            <Text style={[styles.itemTitle, {color: 'black'}]}>{item.nombre}</Text>
-            <Text style={[styles.itemDetails, {color: 'black'}]}>Precio: ${item.precio.toFixed(2)}</Text>
-            <Text style={[styles.itemBadge, {color: 'black'}, item.currentStock < item.minStock ? styles.itemBadgeError : null]}>
-              {item.currentStock}
+            <View style={styles.productInfo}>
+              <Text style={styles.itemTitle}>{item.nombre}</Text>
+              <Text style={styles.itemDetails}>Precio: ${item.precio.toFixed(2)}</Text>
+            </View>
+            <Text style={[styles.itemBadge, item.currentStock < item.minStock ? styles.itemBadgeError : null]}>
+              Stock: {item.currentStock}
             </Text>
           </TouchableOpacity>
         )}
@@ -71,34 +73,43 @@ const Home: React.FC<HomeProps> = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f0f0f0',
+    padding: 10,
+  },
   productItem: {
-    padding: 12,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    marginBottom: 10,
+    padding: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  productInfo: {
+    flex: 1,
   },
   itemTitle: {
-    fontSize: 20,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'black', // Asegura que el color del texto sea negro
   },
   itemDetails: {
     fontSize: 14,
     opacity: 0.7,
+    color: 'black', // Asegura que el color del texto sea negro
   },
   itemBadge: {
-    fontSize: 24,
-    color: 'green',
-    alignSelf: 'center'
+    fontSize: 18,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    color: 'black', // Asegura que el color del texto sea negro
   },
   itemBadgeError: {
-    color: 'red'
-  },
-  addButton: {
-    backgroundColor: '#007bff',
-    padding: 10,
-    borderRadius: 5,
-    margin: 10,
-    alignItems: 'center',
-  },
-  addButtonText: {
+    backgroundColor: 'red',
     color: 'white',
-    fontWeight: 'bold',
   },
 });
 

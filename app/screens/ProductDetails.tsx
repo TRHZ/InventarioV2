@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, Text, View, StyleSheet, Button, ScrollView } from 'react-native';
+import { SafeAreaView, Text, View, StyleSheet, Button, ScrollView, TextInput } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useFocusEffect } from '@react-navigation/native';
-import { RootStackParamList } from '../../App.tsx';
-import { Product } from '../model/Product.ts';
+import { RootStackParamList } from '../../App';
+import { Product } from '../model/Product';
 import LocalDB from '../persistance/localdb';
 
 type ProductDetailsRouteProp = RouteProp<RootStackParamList, 'ProductDetails'>;
@@ -24,6 +24,8 @@ function ProductDetails({ route, navigation }: Props): React.JSX.Element {
   const [loadedProduct, setLoadedProduct] = useState<Product | null>(null);
   const [ingresos, setIngresos] = useState<any[]>([]);
   const [egresos, setEgresos] = useState<any[]>([]);
+  const [cantidadEntrada, setCantidadEntrada] = useState('');
+  const [cantidadSalida, setCantidadSalida] = useState('');
 
   useFocusEffect(
     React.useCallback(() => {
@@ -68,12 +70,78 @@ function ProductDetails({ route, navigation }: Props): React.JSX.Element {
     }
   };
 
-  const navigateToEntries = () => {
-    navigation.navigate('Entries', { productId: product.id });
+  const handleEntry = async () => {
+    if (cantidadEntrada === '') return;
+
+    try {
+      const quantity = parseInt(cantidadEntrada);
+      if (isNaN(quantity) || quantity <= 0) {
+        console.error('La cantidad debe ser un número positivo.');
+        return;
+      }
+
+      const db = await LocalDB.connect();
+      db.transaction(async tx => {
+        tx.executeSql(
+          'UPDATE productos SET currentStock = currentStock + ? WHERE id = ?',
+          [quantity, product.id],
+          () => {
+            console.log('Cantidad agregada correctamente al producto.');
+
+            // Insertar registro en la tabla 'ingresos'
+            tx.executeSql(
+              'INSERT INTO ingresos (productoId, cantidad) VALUES (?, ?)',
+              [product.id, quantity],
+              () => {
+                console.log('Registro de ingreso insertado correctamente');
+                fetchMovimientos(product.id);  // Refresca los movimientos
+              },
+              error => console.error('Error al insertar registro de ingreso:', error)
+            );
+          },
+          error => console.error({ error }),
+        );
+      });
+    } catch (error) {
+      console.error("Error agregando cantidad al producto:", error);
+    }
   };
 
-  const navigateToExits = () => {
-    navigation.navigate('Exits', { productId: product.id });
+  const handleExit = async () => {
+    if (cantidadSalida === '') return;
+
+    try {
+      const quantity = parseInt(cantidadSalida);
+      if (isNaN(quantity) || quantity <= 0) {
+        console.error('La cantidad debe ser un número positivo.');
+        return;
+      }
+
+      const db = await LocalDB.connect();
+      db.transaction(async tx => {
+        tx.executeSql(
+          'UPDATE productos SET currentStock = currentStock - ? WHERE id = ?',
+          [quantity, product.id],
+          () => {
+            console.log('Cantidad restada correctamente del producto.');
+
+            // Insertar registro en la tabla 'egresos'
+            tx.executeSql(
+              'INSERT INTO egresos (productoId, cantidad) VALUES (?, ?)',
+              [product.id, quantity],
+              () => {
+                console.log('Registro de egreso insertado correctamente');
+                fetchMovimientos(product.id);  // Refresca los movimientos
+              },
+              error => console.error('Error al insertar registro de egreso:', error)
+            );
+          },
+          error => console.error({ error }),
+        );
+      });
+    } catch (error) {
+      console.error("Error restando cantidad del producto:", error);
+    }
   };
 
   return (
@@ -91,12 +159,33 @@ function ProductDetails({ route, navigation }: Props): React.JSX.Element {
             <Text style={styles.text}>{loadedProduct.currentStock}</Text>
             <Text style={styles.label}>Maximum Stock:</Text>
             <Text style={styles.text}>{loadedProduct.maxStock}</Text>
-            <View style={styles.buttonContainer}>
-              <Button title="Go to Entries" onPress={navigateToEntries} />
+            
+            <View style={styles.entryExitContainer}>
+              <Text style={styles.entryExitLabel}>Cantidad a agregar:</Text>
+              <TextInput
+                style={styles.input}
+                value={cantidadEntrada}
+                onChangeText={setCantidadEntrada}
+                keyboardType="numeric"
+                placeholder="Ingrese la cantidad"
+                placeholderTextColor="gray"
+              />
+              <Button title="Agregar Cantidad" onPress={handleEntry} />
             </View>
-            <View style={styles.buttonContainer}>
-              <Button title="Go to Exits" onPress={navigateToExits} />
+            
+            <View style={styles.entryExitContainer}>
+              <Text style={styles.entryExitLabel}>Cantidad a restar:</Text>
+              <TextInput
+                style={styles.input}
+                value={cantidadSalida}
+                onChangeText={setCantidadSalida}
+                keyboardType="numeric"
+                placeholder="Ingrese la cantidad"
+                placeholderTextColor="gray"
+              />
+              <Button title="Restar Cantidad" onPress={handleExit} />
             </View>
+            
             <Text style={styles.label}>Ingresos:</Text>
             {ingresos.map((ingreso, index) => (
               <View key={index} style={styles.transactionItem}>
@@ -105,6 +194,7 @@ function ProductDetails({ route, navigation }: Props): React.JSX.Element {
                 <Text style={styles.transactionText}>Fecha: {ingreso.fecha}</Text>
               </View>
             ))}
+            
             <Text style={styles.label}>Egresos:</Text>
             {egresos.map((egreso, index) => (
               <View key={index} style={styles.transactionItem}>
@@ -145,21 +235,34 @@ const styles = StyleSheet.create({
   text: {
     color: 'black',  // Estilo añadido para hacer el texto negro
   },
-  buttonContainer: {
+  entryExitContainer: {
     marginTop: 20,
+    marginBottom: 20,
+  },
+  entryExitLabel: {
+    fontWeight: 'bold',
+    color: 'black',
+    marginBottom: 5,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#cccccc',
+    borderRadius: 5,
+    padding: 10,
     marginBottom: 10,
+    color: 'black',  // Hacer el texto negro
   },
   transactionItem: {
     marginBottom: 5,
     padding: 5,
-    borderWidth: 1,
-    borderColor: '#ccc',
+    borderWidth:     1,
+    borderColor: '#cccccc',
     borderRadius: 5,
   },
   transactionText: {
-    fontSize: 14,
     color: 'black',  // Estilo añadido para hacer el texto negro
   },
 });
 
 export default ProductDetails;
+

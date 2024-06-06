@@ -58,6 +58,8 @@ const Entries: React.FC<EntriesProps> = ({ route }) => {
                 value={cantidad}
                 onChangeText={setCantidad}
                 keyboardType="numeric"
+                placeholder="Ingrese la cantidad"
+                placeholderTextColor="gray"
             />
             <Button title="Agregar Cantidad" onPress={addProductQuantity} />
         </SafeAreaView>
@@ -68,11 +70,12 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 20,
+        backgroundColor: '#fff', // Fondo blanco
     },
     label: {
         fontWeight: 'bold',
         marginTop: 10,
-        color: 'black',  // Estilo añadido para hacer el texto negro
+        color: 'black',  // Texto negro
     },
     input: {
         borderWidth: 1,
@@ -80,7 +83,7 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         padding: 10,
         marginBottom: 10,
-        color: 'black',  // Estilo añadido para hacer el texto negro
+        color: 'black',  // Texto negro
     },
 });
 

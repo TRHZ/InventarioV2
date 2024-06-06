@@ -36,7 +36,7 @@ const ProductAdd: React.FC<ProductAddProps> = () => {
                 value={nombre}
                 onChangeText={setNombre}
                 placeholder="Nombre del producto"
-                placeholderTextColor="gray" // Hacer el texto del placeholder gris
+                placeholderTextColor="#777777" // Hacer el texto del placeholder gris
             />
             <Text style={styles.label}>Precio:</Text>
             <TextInput
@@ -45,7 +45,7 @@ const ProductAdd: React.FC<ProductAddProps> = () => {
                 onChangeText={setPrecio}
                 placeholder="Precio"
                 keyboardType="numeric"
-                placeholderTextColor="gray" // Hacer el texto del placeholder gris
+                placeholderTextColor="#777777" // Hacer el texto del placeholder gris
             />
             <Text style={styles.label}>Stock mínimo:</Text>
             <TextInput
@@ -54,7 +54,7 @@ const ProductAdd: React.FC<ProductAddProps> = () => {
                 onChangeText={setMinStock}
                 placeholder="Stock mínimo"
                 keyboardType="numeric"
-                placeholderTextColor="gray" // Hacer el texto del placeholder gris
+                placeholderTextColor="#777777" // Hacer el texto del placeholder gris
             />
             <Text style={styles.label}>Stock máximo:</Text>
             <TextInput
@@ -63,7 +63,7 @@ const ProductAdd: React.FC<ProductAddProps> = () => {
                 onChangeText={setMaxStock}
                 placeholder="Stock máximo"
                 keyboardType="numeric"
-                placeholderTextColor="gray" // Hacer el texto del placeholder gris
+                placeholderTextColor="#777777" // Hacer el texto del placeholder gris
             />
             <Text style={styles.label}>Stock actual:</Text>
             <TextInput
@@ -72,9 +72,9 @@ const ProductAdd: React.FC<ProductAddProps> = () => {
                 onChangeText={setCurrentStock}
                 placeholder="Stock actual"
                 keyboardType="numeric"
-                placeholderTextColor="gray" // Hacer el texto del placeholder gris
+                placeholderTextColor="#777777" // Hacer el texto del placeholder gris
             />
-            <Button title="Agregar Producto" onPress={addProduct} />
+            <Button title="Agregar Producto" onPress={addProduct} color="#007bff" />
         </SafeAreaView>
     );
 };
@@ -83,19 +83,20 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 20,
+        backgroundColor: '#ffffff',
     },
     label: {
         fontWeight: 'bold',
         marginTop: 10,
-        color: 'black', // Hacer el texto negro
+        color: '#000000', // Hacer el texto negro
     },
     input: {
         borderWidth: 1,
-        borderColor: 'black',
+        borderColor: '#cccccc',
         borderRadius: 5,
         padding: 10,
         marginBottom: 10,
-        color: 'black', // Hacer el texto negro
+        color: '#000000', // Hacer el texto negro
     },
 });
 
